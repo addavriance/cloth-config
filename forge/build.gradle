@@ -31,21 +31,19 @@ dependencies {
 
     forge "net.minecraftforge:forge:${rootProject.architectury.minecraft}-${rootProject.forge_version}"
 
-    modLocalRuntime("me.shedaniel.cloth:basic-math:0.6.1")
-    forgeDependencies(shadowCommon("me.shedaniel.cloth:basic-math:0.6.1"))
+    compileOnly("me.shedaniel.cloth:basic-math:0.6.1")
+    forgeRuntimeLibrary(shadowCommon("me.shedaniel.cloth:basic-math:0.6.1"))
 
-    modLocalRuntime("blue.endless:jankson:${rootProject.jankson_version}")
-    modLocalRuntime("com.moandjiezana.toml:toml4j:${rootProject.toml4j_version}") {
-        exclude(module: "gson")
-    }
-    modLocalRuntime("org.yaml:snakeyaml:${rootProject.snakeyaml_version}")
-    forgeDependencies(shadowCommon("blue.endless:jankson:${rootProject.jankson_version}"))
-    forgeDependencies(shadowCommon("com.moandjiezana.toml:toml4j:${rootProject.toml4j_version}") {
+    localRuntime("blue.endless:jankson:${rootProject.jankson_version}")
+    localRuntime("com.moandjiezana.toml:toml4j:${rootProject.toml4j_version}")
+    localRuntime("org.yaml:snakeyaml:${rootProject.snakeyaml_version}")
+    forgeRuntimeLibrary(shadowCommon("blue.endless:jankson:${rootProject.jankson_version}"))
+    forgeRuntimeLibrary(shadowCommon("com.moandjiezana.toml:toml4j:${rootProject.toml4j_version}") {
         exclude(module: "gson")
     })
-    forgeDependencies(shadowCommon("org.yaml:snakeyaml:${rootProject.snakeyaml_version}"))
+    forgeRuntimeLibrary(shadowCommon("org.yaml:snakeyaml:${rootProject.snakeyaml_version}"))
 
-    common(project(path: ":common", configuration: "namedElements")) { transitive false }
+    common(project(path: ":common")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive false }
 }
 
@@ -60,7 +58,18 @@ processResources {
     inputs.property "META-INF/mods.toml", project.version
 }
 
+jar {
+    archiveClassifier = "raw"
+}
+
+java {
+    withSourcesJar()
+}
+
 shadowJar {
+    dependsOn(jar)
+    mainSpec.sourcePaths.clear()
+    from(zipTree(jar.archiveFile))
     exclude "fabric.mod.json"
     exclude "cloth-config.accessWidener"
     relocate "blue.endless.jankson", "${rootProject.maven_group}.clothconfig.shadowed.blue.endless.jankson"
@@ -68,15 +77,19 @@ shadowJar {
     relocate "org.yaml.snakeyaml", "${rootProject.maven_group}.clothconfig.shadowed.org.yaml.snakeyaml"
 
     configurations = [project.configurations.shadowCommon]
-    archiveClassifier = "shadow"
+    archiveClassifier = null
+    from rootProject.file("LICENSE.md")
 }
 
-remapJar {
-    input.set(shadowJar.archiveFile)
-    dependsOn(shadowJar)
-    archiveClassifier = "forge"
-
-    from rootProject.file("LICENSE.md")
+configurations {
+    apiElements {
+        outgoing.artifacts.clear()
+        outgoing.artifact(shadowJar)
+    }
+    runtimeElements {
+        outgoing.artifacts.clear()
+        outgoing.artifact(shadowJar)
+    }
 }
 
 publishing {
@@ -104,16 +117,16 @@ unifiedPublishing {
     project {
         displayName = "[MinecraftForge $rootProject.supported_version] v$project.version"
         releaseType = "release"
-        gameVersions = ["1.21.2", "1.21.3"]
+        gameVersions = ["${rootProject.supported_version}"]
         gameLoaders = ["forge"]
 
-        mainPublication remapJar
+        mainPublication shadowJar
 
         if (project.hasProperty("curse_api_key") || System.getenv("curse_api_key") != null) {
             curseforge {
                 token = project.hasProperty("curse_api_key") ? project.property("curse_api_key") : System.getenv("curse_api_key")
                 id = project.curseforge_id
-                gameVersions.addAll "Java 17"
+                gameVersions.addAll "Java 21"
             }
         }
 
