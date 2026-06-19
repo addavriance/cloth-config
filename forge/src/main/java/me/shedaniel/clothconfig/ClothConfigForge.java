@@ -21,15 +21,18 @@ package me.shedaniel.clothconfig;
 
 import me.shedaniel.clothconfig2.ClothConfigInitializer;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.IExtensionPoint;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 
 @Mod(ClothConfigInitializer.MOD_ID)
 public class ClothConfigForge {
     public ClothConfigForge() {
         ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> IExtensionPoint.DisplayTest.IGNORESERVERONLY, (a, b) -> true));
-        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ClothConfigForgeDemo::registerModsPage);
+
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            ClothConfigForgeDemo.registerModsPage();
+        }
     }
 }
