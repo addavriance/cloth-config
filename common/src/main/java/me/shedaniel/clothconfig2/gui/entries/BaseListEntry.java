@@ -227,7 +227,11 @@ public abstract class BaseListEntry<T, C extends BaseListCell, SELF extends Base
         }
         return widgets;
     }
-    
+
+    @Override
+    public void setFocused(boolean focused) {
+    }
+
     @Override
     public List<? extends NarratableEntry> narratables() {
         return narratables;
